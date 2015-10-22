@@ -35,7 +35,7 @@ def update_record(args):
     login = args.login
     password = args.password
     domain = args.domain
-    recordType = args.record
+    record_type = args.record
     name = args.name
     ip = get_ip(args.ip)
     ttl = args.ttl
@@ -51,7 +51,7 @@ def update_record(args):
     check_errors(result)
 
     for record in result.data:
-        if (record.type == recordType) and (record.name == name):
+        if (record.type == record_type) and (record.name == name):
             dnsrecord = record
 
     if dnsrecord is None:
@@ -61,13 +61,20 @@ def update_record(args):
 
     if dnsrecord.ip != ip:
         print 'Updating record'
-        dnsrecord.ip = ip
+        print dnsrecord
+        newrecord = client.factory.create('DnsRecord'+str(record_type))
+        newrecord['from'] = strftime("%Y-%m-%d %H:%M:%S", gmtime())
+        newrecord.to = dnsrecord.to
+        newrecord.ttl = ttl
+        newrecord.type = client.factory.create('soapenc:string')
+        newrecord.type.value = record_type
+        # dnsrecord.ip = ip
         # dnsrecord.value[0] = ip
-        dnsrecord.ttl = int(ttl)
+        # dnsrecord.ttl = int(ttl)
         # result = client.service.updateDnsRecord(dnsrecord, domain)
         # check_errors(result)
         # print result
-        print dnsrecord
+        print newrecord
         print 'DNS record updated'
 
     # print result
