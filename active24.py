@@ -7,7 +7,7 @@ if IP address is not set, chooses public IP
 import argparse
 import subprocess as sp
 from suds.client import Client
-from time import gmtime, strftime
+import datetime
 
 def get_ip(ip):
     '''Check if IP is set, if not, get public IP'''
@@ -63,7 +63,9 @@ def update_record(args):
         print 'Updating record'
         print dnsrecord
         newrecord = client.factory.create('DnsRecord'+str(record_type))
-        newrecord['from'] = strftime("%Y-%m-%d %H:%M:%S", gmtime())
+        newrecord['from'] = datetime.datetime.utcnow()
+        # strftime("%Y-%m-%d %H:%M:%S", gmtime())
+        newrecord.id = dnsrecord.id
         newrecord.to = dnsrecord.to
         newrecord.ttl = ttl
         newrecord.type = client.factory.create('soapenc:string')
@@ -71,7 +73,7 @@ def update_record(args):
         # dnsrecord.ip = ip
         # dnsrecord.value[0] = ip
         # dnsrecord.ttl = int(ttl)
-        # result = client.service.updateDnsRecord(dnsrecord, domain)
+        # result = client.service.updateDnsRecord(newrecord, domain)
         # check_errors(result)
         # print result
         print newrecord
