@@ -7,36 +7,37 @@ if IP address is not set, chooses public IP
 import argparse
 import subprocess as sp
 from suds.client import Client
+from time import gmtime, strftime
 
-def getIP(ip):
+def get_ip(ip):
     '''Check if IP is set, if not, get public IP'''
 
     if ip is not None:
         return ip
     else:
         print 'Digging IP'
-        newIp = sp.getoutput(
+        newip = sp.getoutput(
             'dig +short myip.opendns.com @resolver1.opendns.com').split()[0]
-        print 'Using your public ip: ' + newIp
-        return newIp
+        print 'Using your public ip: ' + newip
+        return newip
 
 
-def checkErrors(result):
+def check_errors(result):
     # print result
     if len(result.errors) != 0:
         print result.errors[0].item[0].value[0]
         exit(1)
 
 
-def updateRecord(args):
+def update_record(args):
     '''Update DNS record'''
 
     login = args.login
     password = args.password
     domain = args.domain
-    record = args.record
+    recordType = args.record
     name = args.name
-    ip = getIP(args.ip)
+    ip = get_ip(args.ip)
     ttl = args.ttl
 
     client = Client(
@@ -44,11 +45,32 @@ def updateRecord(args):
 
     # login
     result = client.service.login(args.login, args.password)
-    checkErrors(result)
+    check_errors(result)
 
-    result = client.service.getDnsRecords('ra100.net')
-    checkErrors(result)
-    print result
+    result = client.service.getDnsRecords(domain)
+    check_errors(result)
+
+    for record in result.data:
+        if (record.type == recordType) and (record.name == name):
+            dnsrecord = record
+
+    if dnsrecord is None:
+        print "DNS Record not found"
+        client.service.logout()
+        exit(1)
+
+    if dnsrecord.ip != ip:
+        print 'Updating record'
+        dnsrecord.ip = ip
+        # dnsrecord.value[0] = ip
+        dnsrecord.ttl = int(ttl)
+        # result = client.service.updateDnsRecord(dnsrecord, domain)
+        # check_errors(result)
+        # print result
+        print dnsrecord
+        print 'DNS record updated'
+
+    # print result
 
     # logout
     result = client.service.logout()
@@ -60,21 +82,21 @@ def main():
         description='''Updates DNS record on Active24,
         if IP is not set, sets public IP.''')
     parser.add_argument('-l', '--login', required=True, dest='login',
-                        help='Active24 login name')
+                        help='Active24 login name', type=str)
     parser.add_argument('-p', '--password', required=True, dest='password',
-                        help='Active24 password')
+                        help='Active24 password', type=str)
     parser.add_argument('-r', '--record', nargs='?', dest='record', default='A',
-                        choices=['A', 'AAAA'], help='Record type, default=A')
+                        choices=['A', 'AAAA'], help='Record type, default=A', type=str)
     parser.add_argument('-d', '--domain', required=True, dest='domain',
-                        help='Domain name')
-    parser.add_argument('-i', '--ip', dest='ip', nargs='?',
+                        help='Domain name', type=str)
+    parser.add_argument('-i', '--ip', dest='ip', nargs='?', type=str,
                         help='IP address')
-    parser.add_argument('-n', '--name', required=True, dest='name',
-                        help='DNS record name')
+    parser.add_argument('-n', '--name', required=True, dest='name', type=str,
+                        help='DNS record name (without domain)')
     parser.add_argument('-t', '--ttl', nargs='?', default='3600', dest='ttl',
-                        help='TTL in seconds, default=3600')
+                        help='TTL in seconds, default=3600', type=str)
 
-    updateRecord(parser.parse_args())
+    update_record(parser.parse_args())
 
 if __name__ == '__main__':
     main()
