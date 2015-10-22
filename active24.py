@@ -1,11 +1,11 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 '''
 Script which checks DNS record and updates if IP address differs
 if IP address is not set, chooses public IP
 '''
 
 import argparse
-import subprocess as sp
+import subprocess
 from suds.client import Client
 import datetime
 
@@ -15,17 +15,17 @@ def get_ip(ip):
     if ip is not None:
         return ip
     else:
-        print 'Digging IP'
-        newip = sp.getoutput(
+        print('Digging IP')
+        newip = subprocess.getoutput(
             'dig +short myip.opendns.com @resolver1.opendns.com').split()[0]
-        print 'Using your public ip: ' + newip
+        print('Using your public ip: ' + newip)
         return newip
 
 
 def check_errors(result):
     # print result
     if len(result.errors) != 0:
-        print result.errors[0].item[0].value[0]
+        print(result.errors[0].item[0].value[0])
         exit(1)
 
 
@@ -55,13 +55,13 @@ def update_record(args):
             dnsrecord = record
 
     if dnsrecord is None:
-        print "DNS Record not found"
+        print('DNS Record not found')
         client.service.logout()
         exit(1)
 
     if dnsrecord.ip != ip:
-        print 'Updating record'
-        print dnsrecord
+        print('Updating record')
+        print(dnsrecord)
         newrecord = client.factory.create('DnsRecord'+str(record_type))
         newrecord['from'] = datetime.datetime.utcnow()
         # strftime("%Y-%m-%d %H:%M:%S", gmtime())
@@ -70,20 +70,22 @@ def update_record(args):
         newrecord.ttl = ttl
         newrecord.type = client.factory.create('soapenc:string')
         newrecord.type.value = record_type
+        newrecord.ip.value = ip
+        newrecord.name.value = dnsrecord.name
         # dnsrecord.ip = ip
         # dnsrecord.value[0] = ip
         # dnsrecord.ttl = int(ttl)
         # result = client.service.updateDnsRecord(newrecord, domain)
         # check_errors(result)
-        # print result
-        print newrecord
-        print 'DNS record updated'
+        # print(result)
+        print(newrecord)
+        print('DNS record updated')
 
     # print result
 
     # logout
     result = client.service.logout()
-    print 'Done'
+    print('Done')
 
 
 def main():
