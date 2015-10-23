@@ -9,21 +9,18 @@ import subprocess
 from suds.client import Client
 import datetime
 
+
 def get_ip(ip):
     '''Check if IP is set, if not, get public IP'''
 
-    if ip is not None:
-        return ip
-    else:
-        print('Digging IP')
-        newip = subprocess.getoutput(
-            'dig +short myip.opendns.com @resolver1.opendns.com').split()[0]
-        print('Using your public ip: ' + newip)
-        return newip
+    print('Digging IP')
+    newip = subprocess.getoutput(
+        'dig +short myip.opendns.com @resolver1.opendns.com').split()[0]
+    print('Using your public ip: ' + newip)
+    return newip
 
 
 def check_errors(result):
-    # print result
     if len(result.errors) != 0:
         print(result.errors[0].item[0].value[0])
         exit(1)
@@ -50,6 +47,8 @@ def update_record(args):
     result = client.service.getDnsRecords(domain)
     check_errors(result)
 
+    dnsrecord = None
+
     for record in result.data:
         if (record.type == record_type) and (record.name == name):
             dnsrecord = record
@@ -59,29 +58,26 @@ def update_record(args):
         client.service.logout()
         exit(1)
 
-    if dnsrecord.ip != ip:
+    if dnsrecord.ip != ip and ttl != dnsrecord.ttl:
         print('Updating record')
         print(dnsrecord)
-        newrecord = client.factory.create('DnsRecord'+str(record_type))
+        newrecord = client.factory.create('DnsRecord' + str(record_type))
         newrecord['from'] = datetime.datetime.utcnow()
-        # strftime("%Y-%m-%d %H:%M:%S", gmtime())
         newrecord.id = dnsrecord.id
         newrecord.to = dnsrecord.to
+        if ttl in None:
+            ttl = dnsrecord.ttl
         newrecord.ttl = ttl
         newrecord.type = client.factory.create('soapenc:string')
         newrecord.type.value = record_type
         newrecord.ip.value = ip
         newrecord.name.value = dnsrecord.name
-        # dnsrecord.ip = ip
-        # dnsrecord.value[0] = ip
-        # dnsrecord.ttl = int(ttl)
-        # result = client.service.updateDnsRecord(newrecord, domain)
-        # check_errors(result)
-        # print(result)
-        print(newrecord)
+        newrecord.value = client.factory.create('soapenc:Array')
+        result = client.service.updateDnsRecord(newrecord, domain)
+        check_errors(result)
         print('DNS record updated')
-
-    # print result
+    else:
+        print('DNS record already has same IP and TTL')
 
     # logout
     result = client.service.logout()
@@ -91,7 +87,8 @@ def update_record(args):
 def main():
     parser = argparse.ArgumentParser(
         description='''Updates DNS record on Active24,
-        if IP is not set, sets public IP.''')
+        if IP is not set, sets public IP.
+        Updates record only if IP and TTL are different than already set.''')
     parser.add_argument('-l', '--login', required=True, dest='login',
                         help='Active24 login name', type=str)
     parser.add_argument('-p', '--password', required=True, dest='password',
@@ -104,8 +101,8 @@ def main():
                         help='IP address')
     parser.add_argument('-n', '--name', required=True, dest='name', type=str,
                         help='DNS record name (without domain)')
-    parser.add_argument('-t', '--ttl', nargs='?', default='3600', dest='ttl',
-                        help='TTL in seconds, default=3600', type=str)
+    parser.add_argument('-t', '--ttl', nargs='?', dest='ttl',
+                        help='TTL in seconds, if empty, uses TTL from DNSrecord', type=str)
 
     update_record(parser.parse_args())
 
