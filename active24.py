@@ -8,7 +8,7 @@ import argparse
 import subprocess
 from suds.client import Client
 import datetime
-
+import syslog
 
 def get_ip(ip):
     '''Check if IP is set, if not, get public IP'''
@@ -23,7 +23,8 @@ def get_ip(ip):
 
 def check_errors(result):
     if len(result.errors) != 0:
-        print(result.errors[0].item[0].value[0])
+        # print(result.errors[0].item[0].value[0])
+        syslog(syslog.LOG_ERR, 'active24Soap failed request: ' + result.errors[0].item[0].value[0])
         exit(1)
 
 
@@ -66,7 +67,7 @@ def update_record(client, dnsrecord, ip, ttl, domain, record_type):
         result = client.service.updateDnsRecord(newrecord, domain)
         check_errors(result)
         # print('DNS record updated')
-    else:
+    # else:
         # print('DNS record already has same IP and TTL')
 
 
