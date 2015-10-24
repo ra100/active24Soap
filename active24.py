@@ -14,10 +14,10 @@ def get_ip(ip):
     '''Check if IP is set, if not, get public IP'''
     if ip is not None:
         return ip
-    print('Digging IP')
+    # print('Digging IP')
     newip = subprocess.getoutput(
         'dig +short myip.opendns.com @resolver1.opendns.com').split()[0]
-    print('Using your public ip: ' + newip)
+    # print('Using your public ip: ' + newip)
     return newip
 
 
@@ -44,7 +44,7 @@ def create_record(client, ip, ttl, domain, record_type, name):
     # print(newrecord)
     result = client.service.addDnsRecord(newrecord, domain)
     check_errors(result)
-    print('New DNS record created.')
+    # print('New DNS record created.')
 
 
 def update_record(client, dnsrecord, ip, ttl, domain, record_type):
@@ -65,16 +65,16 @@ def update_record(client, dnsrecord, ip, ttl, domain, record_type):
         newrecord.value = client.factory.create('soapenc:Array')
         result = client.service.updateDnsRecord(newrecord, domain)
         check_errors(result)
-        print('DNS record updated')
+        # print('DNS record updated')
     else:
-        print('DNS record already has same IP and TTL')
+        # print('DNS record already has same IP and TTL')
 
 
 def delete_record(client, record):
     '''Deletes existing DNS record'''
     result = client.service.deleteDnsRecord(record.id, domain)
     check_errors(result)
-    print('Record deleted.')
+    # print('Record deleted.')
 
 
 def get_record(client, domain, name, record_type):
@@ -86,7 +86,7 @@ def get_record(client, domain, name, record_type):
         if (record.type == record_type) and (record.name == name):
             dnsrecord = record
     if dnsrecord is None:
-        print('DNS Record not found')
+        # print('DNS Record not found')
         client.service.logout()
         exit(1)
     return dnsrecord
@@ -125,7 +125,7 @@ def record_action(args):
 
     # logout
     result = client.service.logout()
-    print('Done')
+    # print('Done')
 
 
 def main():
