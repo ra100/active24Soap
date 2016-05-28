@@ -24,7 +24,7 @@ def get_ip(ip):
 def check_errors(result):
     if len(result.errors) != 0:
         # print(result.errors[0].item[0].value[0])
-        syslog(syslog.LOG_ERR, 'active24Soap failed request: ' + result.errors[0].item[0].value[0])
+        syslog.syslog(syslog.LOG_ERR, 'active24Soap failed request: ' + result.errors[0].item[0].value[0])
         exit(1)
 
 
